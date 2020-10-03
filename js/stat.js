@@ -11,69 +11,102 @@ const FONT_LINE_HEIGHT = 16;
 const BAR_WIDTH = 40;
 const BAR_HEIGHT = 150;
 const DESCRIPTION__HEIGHT = CLOUD_Y + PADDING + FONT_LINE_HEIGHT * 2;
+const GRAPH_COLOR_PLAYER = `rgba(0, 0, 255, 1)`;
+const TEXT_COLOR = `rgba(0, 0, 0, 1)`;
 
-const renderCloud = function (ctx, x, y, color) {
+
+function renderCloud(ctx, x, y, color, cloudWidth = CLOUD_WIDTH, cloudHeight = CLOUD_HEIGHT) {
   ctx.fillStyle = color;
-  ctx.fillRect(x, y, CLOUD_WIDTH, CLOUD_HEIGHT);
-};
+  ctx.fillRect(x, y, cloudWidth, cloudHeight);
+}
 
-const getMaxElement = function (arr) {
-  let maxElement = arr[0];
 
-  for (let index = 1; index < arr.length; index++) {
-    if (arr[index] > maxElement) {
-      maxElement = arr[index];
+function renderWindow(descriptionTextArray, ctx) {
+  renderCloud(ctx, CLOUD_X + GAP, CLOUD_Y + GAP, `rgba(0, 0, 0, 0.3)`);
+  renderCloud(ctx, CLOUD_X, CLOUD_Y, `rgba(255, 255, 255, 1)`);
+
+  ctx.fillStyle = TEXT_COLOR;
+  ctx.font = `bold ${FONT_LINE_HEIGHT}px "PT Mono"`;
+
+  descriptionTextArray.forEach((item, index) => {
+    if (index < 3) {
+      ctx.fillText(String(item), CLOUD_X + PADDING, CLOUD_Y + PADDING + (FONT_LINE_HEIGHT * index));
+    }
+  });
+}
+
+
+function getMaxElementArray(arrayNumbers) {
+  let maxElement = arrayNumbers[0];
+
+  for (let index = 1; index < arrayNumbers.length; index++) {
+    if (arrayNumbers[index] > maxElement) {
+      maxElement = arrayNumbers[index];
     }
   }
 
   return maxElement;
-};
+}
 
-const getrandomInteger = function (min, max) {
-  let rand = min - 0.5 + Math.random() * (max - min + 1);
-  return Math.round(rand);
-};
+
+function getRandomInteger(min, max) {
+  return Math.round(min - 0.5 + Math.random() * (max - min + 1));
+}
+
+
+function getRandomColor() {
+  return `hsl(240, ${getRandomInteger(0, 100)}%, 50%)`;
+}
+
+
+function drawGraph(darwParametrsObject, ctx) {
+  const {time, name, nameStartY, timeStartY, graphStartX, graphStartY, graphHeight, graphWidth, graphColor} = darwParametrsObject;
+  const roundTime = Math.round(time);
+
+  ctx.fillStyle = TEXT_COLOR;
+
+  ctx.fillText(
+      String(name),
+      graphStartX,
+      nameStartY
+  );
+  ctx.fillText(
+      String(roundTime),
+      graphStartX,
+      timeStartY
+  );
+
+  ctx.fillStyle = graphColor;
+
+  ctx.fillRect(
+      graphStartX,
+      graphStartY,
+      graphWidth,
+      graphHeight
+  );
+}
+
 
 window.renderStatistics = function (ctx, players, times) {
-  const maxTime = getMaxElement(times);
+  renderWindow([`Ура вы победили!`, `Список результатов:`], ctx);
 
-  renderCloud(ctx, CLOUD_X + GAP, CLOUD_Y + GAP, `rgba(0, 0, 0, 0.3)`);
-  renderCloud(ctx, CLOUD_X, CLOUD_Y, `rgba(255, 255, 255, 1)`);
+  const maxTime = getMaxElementArray(times);
 
-  ctx.fillStyle = `rgba(0, 0, 0, 1)`;
-  ctx.font = `bold ${FONT_LINE_HEIGHT}px "PT Mono"`;
-  ctx.fillText(`Ура вы победили!`, CLOUD_X + PADDING, CLOUD_Y + PADDING);
-  ctx.fillText(`Список результатов:`, CLOUD_X + PADDING, CLOUD_Y + PADDING + FONT_LINE_HEIGHT);
+  players.forEach((player, index) => {
+    const drawParametrs = {
+      time: times[index],
+      name: player,
+      nameStartY: CLOUD_Y + CLOUD_HEIGHT - GAP,
+      timeStartY: (BAR_HEIGHT - (BAR_HEIGHT * times[index] / maxTime) + DESCRIPTION__HEIGHT + FONT_LINE_HEIGHT),
+      graphStartX: CLOUD_X + PADDING + (BAR_WIDTH + COLUMN_GAP) * index,
+      graphStartY: CLOUD_Y + CLOUD_HEIGHT - GAP - FONT_LINE_HEIGHT,
+      graphHeight: ((BAR_HEIGHT * times[index] / maxTime)) * -1,
+      graphWidth: BAR_WIDTH,
+      get graphColor() {
+        return this.name === `Вы` ? GRAPH_COLOR_PLAYER : getRandomColor();
+      },
+    };
 
-  for (let index = 0; index < players.length; index++) {
-    const roundTime = Math.round(times[index]);
-
-    ctx.fillStyle = `rgba(0, 0, 0, 1)`;
-
-    ctx.fillText(
-        `${players[index]}`,
-        CLOUD_X + PADDING + (BAR_WIDTH + COLUMN_GAP) * index,
-        CLOUD_Y + CLOUD_HEIGHT - GAP
-    );
-
-    ctx.fillText(
-        `${roundTime}`,
-        CLOUD_X + PADDING + (BAR_WIDTH + COLUMN_GAP) * index,
-        (BAR_HEIGHT - (BAR_HEIGHT * times[index] / maxTime) + DESCRIPTION__HEIGHT + FONT_LINE_HEIGHT)
-    );
-
-    ctx.fillStyle = `hsl(240, ${getrandomInteger(0, 100)}%, 50%)`;
-    if (players[index] === `Вы`) {
-      ctx.fillStyle = `rgba(0, 0, 255, 1)`;
-    }
-
-    ctx.fillRect(
-        CLOUD_X + PADDING + (BAR_WIDTH + COLUMN_GAP) * index,
-        CLOUD_Y + CLOUD_HEIGHT - GAP - FONT_LINE_HEIGHT,
-        BAR_WIDTH,
-        ((BAR_HEIGHT * times[index] / maxTime)) * -1
-    );
-
-  }
+    drawGraph(drawParametrs, ctx);
+  });
 };
-
